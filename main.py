@@ -27,22 +27,20 @@ API = {
     },
 }
 
-# Trade using this coin
-PROGRAM_QUOTE_ASSET = 'BUSD'
+# Trade using these coins
+PROGRAM_QUOTE_ASSETS = ['BUSD', 'BNB', 'USDT', 'BTC', 'ETH']
 # The amount of time between loops
 LOOP_DELAY_SECONDS = 3
-# If you have more than this much in your account, HOLD instead of BUY
-ASSET_MINIMUM_HOLD_THRESHOLD = 9.5
-# Fraction of available quote asset balance to use on each BUY order
+# Proportion of bot's min notional; if the balance is higher than this then the bot will not buy in an asset pair
+NOTIONAL_HOLD_THRESHOLD_FAC = 0.95
+# Proportion of Binance's min notional to use for calculating floored buy quantity
+MIN_NOTIONAL_BUY_FAC = 1.03
+# Proportion of available quote asset balance to use on each BUY order
 QUOTE_PER_TRANSACTION_FAC = 1/1
-# Minimum quote order size to use on each transaction
-QUOTE_PER_TRANSACTION_MIN = 10.3
 # Sell coins when the price increases by this percent
 PRICE_INCREASE_SELL_THRESHOLD_PERCENT = 0.2
 # Ignore coins below this volume
 QUOTE_VOLUME_MIN = 7000000
-# Ignore coins above this price
-QUOTE_BUY_PRICE_MAX = 999999999999
 # Do not buy or sell these coins
 EXCLUDE_BASE_ASSETS = {'TUSD', 'USDC', 'EUR', 'BTC', 'BUSD', 'BNB', 'USDP', 'AUD', 'UST', 'LUNA'}
 
@@ -438,7 +436,7 @@ def create_loop_environment():
         qa = e.get('quoteAsset')
         # Filter out symbols to ignore
         if (
-            qa == PROGRAM_QUOTE_ASSET and
+            qa in PROGRAM_QUOTE_ASSETS and
             ba not in EXCLUDE_BASE_ASSETS and
             'BULL' not in ba and
             'BEAR' not in ba
@@ -447,13 +445,17 @@ def create_loop_environment():
             s = e.get('symbol')
             symbol_list.append(s)
             f = e.get('filters')
+            
+            min_notional = float(next(
+                (e for e in f if e.get('filterType') == 'MIN_NOTIONAL')
+            ).get('minNotional'))
+            
             symbol_infos[s] = {
                 'quoteAsset': qa,
                 'baseAsset': ba,
                 
-                'minNotional': float(next(
-                    (e for e in f if e.get('filterType') == 'MIN_NOTIONAL')
-                ).get('minNotional')),
+                'minNotional': min_notional,
+                'minNotionalBuy': min_notional * MIN_NOTIONAL_BUY_FAC,
                 
                 'stepSize': float(next(
                     (e for e in f if e.get('filterType') == 'LOT_SIZE')
@@ -486,14 +488,31 @@ def create_loop_environment():
     
     # Record prices and volumes for all relevant symbols
     print('Get tickers from Binance...')
-    ticker_24hr = binance_default_client.ticker_24hr(symbols=(symbol_list + ['BTCBUSD'])) # get BTCBUSD for use as an index
-    for t in ticker_24hr:
-        s = t.get('symbol')
-        if s in symbol_infos:
-            symbol_infos[s]['bidPrice'] = t.get('bidPrice')
-            symbol_infos[s]['askPrice'] = t.get('askPrice')
-            symbol_infos[s]['quoteVolume'] = t.get('quoteVolume')
+    
+    # Add BTCBUSD for use as an index and split up the list into manageable request sizes (thanks Binance)
+    long_symbol_list = symbol_list + ['BTCBUSD']
+    REQUEST_LIST_SIZE_MAX = 400
+    pointer_index = 0
+    while pointer_index < len(long_symbol_list):
+        end_index = min(pointer_index + REQUEST_LIST_SIZE_MAX, len(long_symbol_list))
+        request_symbol_list = long_symbol_list[pointer_index:end_index]
+        pointer_index += REQUEST_LIST_SIZE_MAX
+        
+        ticker_24hr = binance_default_client.ticker_24hr(symbols=request_symbol_list) # get BTCBUSD for use as an index
+        for t in ticker_24hr:
+            s = t.get('symbol')
+            if s in symbol_infos:
+                symbol_infos[s]['bidPrice'] = t.get('bidPrice')
+                symbol_infos[s]['askPrice'] = t.get('askPrice')
+                symbol_infos[s]['quoteVolume'] = t.get('quoteVolume')
+    
+    del long_symbol_list
+    del REQUEST_LIST_SIZE_MAX
+    del pointer_index
+    del end_index
+    del request_symbol_list
     del ticker_24hr
+    
     # Make the dictionary for the symbols' recommendations
     # { symbol: { interval: { type: rec } } }
     symbol_recommendations = dict()
@@ -594,13 +613,13 @@ def create_loop_environment():
                 sell.append(symbol)
         
         # Check if bitcoin is buy or sell first, and only buy or sell based on that
-        btc_trade = run_index_strategy(symbol_recommendations['BTCBUSD'], symbol_last_recommendations['BTCBUSD'])
-        if btc_trade >= 0:
-            print('BTCBUSD says do not SELL')
-            sell = list()
-        if btc_trade <= 0:
-            print('BTCBUSD says do not BUY')
-            buy = list()
+        # btc_trade = run_index_strategy(symbol_recommendations['BTCBUSD'], symbol_last_recommendations['BTCBUSD'])
+        # if btc_trade >= 0:
+            # print('BTCBUSD says do not SELL')
+            # sell = list()
+        # if btc_trade <= 0:
+            # print('BTCBUSD says do not BUY')
+            # buy = list()
         
         #print('BUY: {}'.format(buy))
         #print('SELL: {}'.format(sell))
@@ -685,56 +704,58 @@ def create_loop_environment():
                     send_order(user, symbol, 'SELL', base_asset_order_size, price)
 
             # Figure out how much to spend on each coin
-            balance_quote = float(next(
-                (b.get('free') for b in balances if b.get('asset') == PROGRAM_QUOTE_ASSET),
-                0
-            ))
-            print('api#{} / {}'.format(user, next(b for b in balances if b.get('asset') == PROGRAM_QUOTE_ASSET)))
-            quote_per_transaction = max(
-                QUOTE_PER_TRANSACTION_MIN,
-                balance_quote * QUOTE_PER_TRANSACTION_FAC
-            )
-            # Randomise the buy list between users
-            random.shuffle(buy)
-            # Buy stuff
-            for symbol in buy:
-                # Stop looping if the quote asset balance is too low
-                if balance_quote < quote_per_transaction:
-                    break
-                
-                symbol_info = symbol_infos.get(symbol, None)
-    
-                # Skip if volume is too low
-                if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
-                    continue
-    
-                base_asset = symbol_info.get('baseAsset')
-                # Check how much of this coin the user has
-                base_asset_balance = float(next(
-                    (b.get('free') for b in balances if b.get('asset') == base_asset),
+            for qa in PROGRAM_QUOTE_ASSETS:
+            ########################################################################
+                balance_quote = float(next(
+                    (b.get('free') for b in balances if b.get('asset') == qa),
                     0
                 ))
-    
-                # Get filters
-                fv_step_size = symbol_info.get('stepSize')
-                fv_min_notional = symbol_info.get('minNotional')
-    
-                price = symbol_info.get('bidPrice')
-                f_price = float(price)
-                # Skip if price is too high
-                if f_price > QUOTE_BUY_PRICE_MAX:
-                    continue
-    
-                base_asset_order_size = math.floor(
-                    quote_per_transaction / f_price / fv_step_size) * fv_step_size
-                # Check if the user already has enough of this coin
-                quote_order_size = base_asset_order_size * f_price
-                if (
-                    balance_quote >= quote_order_size >= fv_min_notional and
-                    base_asset_balance * f_price < ASSET_MINIMUM_HOLD_THRESHOLD
-                ):
-                    balance_quote -= quote_order_size
-                    send_order(user, symbol, 'BUY', base_asset_order_size, price)
+                # This is how much the bot wants to spend on each coin
+                # Note that if this is below the minNotionalBuy value, the bot will use that value instead
+                ideal_quote_per_transaction = balance_quote * QUOTE_PER_TRANSACTION_FAC
+                
+                # Randomise the buy list between users
+                random.shuffle(buy)
+                # Buy stuff
+                for symbol in buy:
+                    # Stop looping if the quote asset balance is too low
+                    if balance_quote < quote_per_transaction:
+                        break
+                    
+                    symbol_info = symbol_infos.get(symbol, None)
+        
+                    # Skip if volume is too low
+                    if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
+                        continue
+        
+                    base_asset = symbol_info.get('baseAsset')
+                    # Check how much of this coin the user has
+                    base_asset_balance = float(next(
+                        (b.get('free') for b in balances if b.get('asset') == base_asset),
+                        0
+                    ))
+        
+                    # Get filters
+                    fv_step_size = symbol_info.get('stepSize')
+                    fv_min_notional = symbol_info.get('minNotional')
+                
+                    # This is how much the bot will actually try to spend on this coin
+                    # In case the ideal is lower than the configured minimum buying size, the latter will be used instead
+                    quote_per_transaction = max(symbol_info.get('minNotionalBuy'), ideal_quote_per_transaction)
+        
+                    price = symbol_info.get('bidPrice')
+                    f_price = float(price)
+        
+                    base_asset_order_size = math.floor(
+                        quote_per_transaction / f_price / fv_step_size) * fv_step_size
+                    # Check if the user already has enough of this coin
+                    quote_order_size = base_asset_order_size * f_price
+                    if (
+                        balance_quote >= quote_order_size >= fv_min_notional and
+                        base_asset_balance * f_price < ASSET_MINIMUM_HOLD_THRESHOLD
+                    ):
+                        balance_quote -= quote_order_size
+                        send_order(user, symbol, 'BUY', base_asset_order_size, price)
 
         # Write stuff down
         record_session_data()
