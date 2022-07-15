@@ -39,6 +39,8 @@ MIN_NOTIONAL_BUY_FAC = 1.03
 QUOTE_PER_TRANSACTION_FAC = 1/1
 # Sell coins when the price increases by this percent
 PRICE_INCREASE_SELL_THRESHOLD_PERCENT = 0.2
+# As above, but for the short-term strategy
+SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_PERCENT = 0.01
 # Ignore coins below this volume
 QUOTE_VOLUME_MIN = 7000000
 # Do not buy or sell these coins
@@ -145,6 +147,35 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         return 1
     else:
         return 0
+        
+
+def run_trade_strategy_short(rec):
+    if (
+        # short-term BUY strategy
+        rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        rec[Interval.INTERVAL_1_HOUR]['sum'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_HOUR]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_HOUR]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        rec[Interval.INTERVAL_4_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_4_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+    True):
+        return 1
+    else:
+        return 0
 
 
 def run_index_strategy(rec, last_rec):
@@ -241,6 +272,8 @@ print('Starting up...')
 
 # Calculate factor from percent increase config
 PRICE_INCREASE_SELL_THRESHOLD_FACTOR = (100 + PRICE_INCREASE_SELL_THRESHOLD_PERCENT) / 100
+# As above, but for the short-term strategy
+SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_FACTOR = (100 + SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_PERCENT) / 100
 
 # Set up tradingview-ta
 ta_intervals = list()
@@ -279,6 +312,9 @@ def create_loop_environment():
     def record_session_data():
         with open('buy_prices.json', 'w') as f:
             f.write(json.dumps(buy_prices))
+        
+        with open('short_term_buy_prices.json', 'w') as f:
+            f.write(json.dumps(short_term_buy_prices))
         
         with open('did_hit_strong_sell.json', 'w') as f:
             f.write(json.dumps(did_hit_strong_sell))
@@ -386,6 +422,17 @@ def create_loop_environment():
         print('Loaded `buy_prices`')
     except:
         print('Could not load `buy_prices`, starting fresh')
+        
+    # As above, but for the short-term strategy
+    short_term_buy_prices = dict()
+    try:
+        f = open('short_term_buy_prices.json', 'r')
+        res = f.read()
+        f.close()
+        short_term_buy_prices = json.loads(res)
+        print('Loaded `short_term_buy_prices`')
+    except:
+        print('Could not load `short_term_buy_prices`, starting fresh')
     
     # As above, but { symbol: { interval: { type: bool } }
     did_hit_strong_sell = dict()
@@ -422,9 +469,11 @@ def create_loop_environment():
         # Create buy price dictionary for this user
         if not user in buy_prices:
             buy_prices[user] = dict()
-            
-    
-        
+        # As above, but for the short-term strategy
+        if not user in short_term_buy_prices:
+            short_term_buy_prices[user] = dict()
+
+
     # Set up trading pairs
     symbol_infos = dict()
     symbol_list = list()
@@ -456,6 +505,7 @@ def create_loop_environment():
                 
                 'minNotional': min_notional,
                 'minNotionalBuy': min_notional * MIN_NOTIONAL_BUY_FAC,
+                'holdThreshold': min_notional * NOTIONAL_HOLD_THRESHOLD_FAC,
                 
                 'stepSize': float(next(
                     (e for e in f if e.get('filterType') == 'LOT_SIZE')
@@ -752,7 +802,7 @@ def create_loop_environment():
                     quote_order_size = base_asset_order_size * f_price
                     if (
                         balance_quote >= quote_order_size >= fv_min_notional and
-                        base_asset_balance * f_price < ASSET_MINIMUM_HOLD_THRESHOLD
+                        base_asset_balance * f_price < symbol_info.get('holdThreshold')
                     ):
                         balance_quote -= quote_order_size
                         send_order(user, symbol, 'BUY', base_asset_order_size, price)
