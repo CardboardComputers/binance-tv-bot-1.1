@@ -149,7 +149,7 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         return 0
         
 
-def run_trade_strategy_short(rec):
+def run_short_term_trade_strategy(rec):
     if (
         # short-term BUY strategy
         rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
@@ -315,6 +315,12 @@ def create_loop_environment():
         
         with open('short_term_buy_prices.json', 'w') as f:
             f.write(json.dumps(short_term_buy_prices))
+            
+        with open('short_term_balances.json', 'w') as f:
+            f.write(json.dumps(short_term_balances))
+        
+        with open('short_term_pending_orders.json', 'w') as f:
+            f.write(json.dumps(short_term_pending_orders))
         
         with open('did_hit_strong_sell.json', 'w') as f:
             f.write(json.dumps(did_hit_strong_sell))
@@ -342,10 +348,32 @@ def create_loop_environment():
         # Construct a message handler
         def on_message(msg):
             if msg.get('e') == 'executionReport':
-                if msg.get('x') == 'TRADE' and msg.get('S') == 'BUY':
+                if msg.get('x') == 'TRADE':
                     s = msg.get('s')
-                    buy_prices[user][s] = float(msg.get('p'))
-                    print('record price for api#{} {} @ {}'.format(user, s, msg.get('p')))
+                    client_order_id = msg.get('c')
+                    if msg.get('S') == 'BUY':
+                        # For buy orders
+                        price = float(msg.get('p'))
+                        # Check if this was a short-term order
+                        if client_order_id in short_term_pending_orders:
+                            # Track balances for short-term orders
+                            short_term_buy_prices[user][s] = price
+                            short_term_balances[user][s] += float(msg.get('q'))
+                            # Remove filled orders from pending orders
+                            if msg.get('X') == 'FILLED':
+                                short_term_pending_orders.pop(client_order_id)
+                            print('record short-term price for api#{} {} @ {}'.format(user, s, price))
+                        else:
+                            buy_prices[user][s] = float(price)
+                            print('record price for api#{} {} @ {}'.format(user, s, price))
+                    elif msg.get('S') == 'SELL':
+                        # Track how much is left after selling
+                        if client_order_id in short_term_pending_orders:
+                            short_term_balances[user][s] -= float(msg.get('q'))
+                            # Remove filled orders from pending orders
+                            if msg.get('X') == 'FILLED':
+                                short_term_pending_orders.pop(client_order_id)
+                            
                     record_session_data()
             elif msg.get('e') == 'error':
                 # This thing had an error, so replace it with a new one
@@ -374,6 +402,25 @@ def create_loop_environment():
                 quantity=quantity,
                 price=price
             )
+        except ClientError as e:
+            except_api(e)
+
+
+    def send_record_short_term_order(api_index, symbol, side, quantity, price):
+        quantity = f'{quantity:.10f}'.rstrip('0').rstrip('.')
+        print('short term api#{} {} {} x {} @ {}'.format(api_index, side, symbol, quantity, price))
+        try:
+            order_out = binance_clients[api_index].new_order(
+                symbol=symbol,
+                side=side,
+                type='LIMIT_MAKER',
+                quantity=quantity,
+                price=price
+            )
+            short_term_pending_orders[order_out.get('clientOrderId')] = {
+                'apiIndex': api_index,
+                'side': side
+            }
         except ClientError as e:
             except_api(e)
 
@@ -433,8 +480,30 @@ def create_loop_environment():
         print('Loaded `short_term_buy_prices`')
     except:
         print('Could not load `short_term_buy_prices`, starting fresh')
+        
+    # { api: { symbol: balance } }
+    short_term_balances = dict()
+    try:
+        f = open('short_term_balances.json', 'r')
+        res = f.read()
+        f.close()
+        short_term_balances = json.loads(res)
+        print('Loaded `short_term_balances`')
+    except:
+        print('Could not load `short_term_balances`, starting fresh')
+        
+    # { clientOrderId: api, side }
+    short_term_pending_orders = dict()
+    try:
+        f = open('short_term_pending_orders.json', 'r')
+        res = f.read()
+        f.close()
+        short_term_pending_orders = json.loads(res)
+        print('Loaded `short_term_pending_orders`')
+    except:
+        print('Could not load `short_term_pending_orders`, starting fresh')
     
-    # As above, but { symbol: { interval: { type: bool } }
+    # { symbol: { interval: { type: bool } }
     did_hit_strong_sell = dict()
     try:
         f = open('did_hit_strong_sell.json', 'r')
@@ -472,6 +541,9 @@ def create_loop_environment():
         # As above, but for the short-term strategy
         if not user in short_term_buy_prices:
             short_term_buy_prices[user] = dict()
+        # As above, but for tracking short-term trading balances
+        if not user in short_term_balances:
+            short_term_balances[user] = dict()
 
 
     # Set up trading pairs
@@ -652,6 +724,7 @@ def create_loop_environment():
         # Figure out which symbols to buy and which ones to sell
         buy = list()
         sell = list()
+        buy_short_term = list()
 
         for symbol, recommendation in symbol_recommendations.items():
             if symbol == 'BTCBUSD': # skip the index symbol
@@ -661,6 +734,13 @@ def create_loop_environment():
                 buy.append(symbol)
             elif trade < 0:
                 sell.append(symbol)
+        
+        for symbol, recommendation in symbol_last_recommendations.items():
+            if symbol == 'BTCBUSD':
+                continue
+            trade = run_short_term_trade_strategy(recommendation)
+            if trade > 0:
+                buy_short_term.append(symbol)
         
         # Check if bitcoin is buy or sell first, and only buy or sell based on that
         # btc_trade = run_index_strategy(symbol_recommendations['BTCBUSD'], symbol_last_recommendations['BTCBUSD'])
@@ -698,19 +778,21 @@ def create_loop_environment():
                 # Skip this user
                 print(e)
                 continue
+                
+            organised_balances = dict()
+            for b in balances:
+                organised_balances[b.get('asset')] = float(b.get('free', 0))
 
-            # Check if prices have increased above the sell threshold
-            for symbol, price in buy_prices[user].items():
+            ######## SHORT-TERM SELL ########
+            # Check if short-term prices have increased above the sell threshold
+            for symbol, price in short_term_buy_prices[user].items():
                 symbol_info = symbol_infos.get(symbol, None)
-                sell_threshold = price * PRICE_INCREASE_SELL_THRESHOLD_FACTOR
+                sell_threshold = price * SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_FACTOR
                 if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
     
                     base_asset = symbol_info.get('baseAsset')
                     # Check how much of this coin the user has
-                    base_asset_balance = float(next(
-                        (b.get('free') for b in balances if b.get('asset') == base_asset),
-                        0
-                    ))
+                    base_asset_balance = organised_balances.get(base_asset, 0)
                     
                     # Skip excluded coins
                     if base_asset in EXCLUDE_BASE_ASSETS:
@@ -725,21 +807,49 @@ def create_loop_environment():
                     # Sell as much of the base asset as possible
                     base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
                     if base_asset_order_size * float(price) >= fv_min_notional:
+                        send_record_short_term_order(user, symbol, 'SELL', base_asset_order_size, price)
+
+            ######## LONG-TERM SELL ########
+            # Check if prices have increased above the sell threshold
+            for symbol, price in buy_prices[user].items():
+                symbol_info = symbol_infos.get(symbol, None)
+                sell_threshold = price * PRICE_INCREASE_SELL_THRESHOLD_FACTOR
+                if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
+    
+                    base_asset = symbol_info.get('baseAsset')
+                    # Skip excluded coins
+                    if base_asset in EXCLUDE_BASE_ASSETS:
+                        continue
+                        
+                    # Check how much of this coin the user has
+                    base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
+                    # Skip coins with no long-term balance
+                    if base_asset_balance <= 0:
+                        continue
+
+                    # Get filters
+                    fv_step_size = symbol_info.get('stepSize')
+                    fv_min_notional = symbol_info.get('minNotional')
+    
+                    price = symbol_info.get('askPrice')
+    
+                    # Sell as much of the base asset as possible
+                    base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
+                    if base_asset_order_size * float(price) >= fv_min_notional:
                         send_order(user, symbol, 'SELL', base_asset_order_size, price)
 
-            # Sell stuff
+            # Sell stuff based on indicators
             for symbol in sell:
                 symbol_info = symbol_infos.get(symbol, None)
     
                 base_asset = symbol_info.get('baseAsset')
-                # Check how much of this coin the user has
-                base_asset_balance = float(next(
-                    (b.get('free') for b in balances if b.get('asset') == base_asset),
-                    0
-                ))
-    
                 # Skip excluded coins
                 if base_asset in EXCLUDE_BASE_ASSETS:
+                    continue
+                
+                # Check how much of this coin the user has
+                base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
+                if base_asset_balance <= 0:
                     continue
 
                 # Get filters
@@ -756,20 +866,18 @@ def create_loop_environment():
             # Figure out how much to spend on each coin
             for qa in PROGRAM_QUOTE_ASSETS:
             ########################################################################
-                balance_quote = float(next(
-                    (b.get('free') for b in balances if b.get('asset') == qa),
-                    0
-                ))
+                balance_quote = organised_balances.get(qa, 0)
                 # This is how much the bot wants to spend on each coin
                 # Note that if this is below the minNotionalBuy value, the bot will use that value instead
                 ideal_quote_per_transaction = balance_quote * QUOTE_PER_TRANSACTION_FAC
                 
+                ######## LONG-TERM BUY ########
                 # Randomise the buy list between users
                 random.shuffle(buy)
                 # Buy stuff
                 for symbol in buy:
                     # Stop looping if the quote asset balance is too low
-                    if balance_quote < quote_per_transaction:
+                    if balance_quote < ideal_quote_per_transaction:
                         break
                     
                     symbol_info = symbol_infos.get(symbol, None)
@@ -779,11 +887,12 @@ def create_loop_environment():
                         continue
         
                     base_asset = symbol_info.get('baseAsset')
+                    # Skip excluded coins
+                    if base_asset in EXCLUDE_BASE_ASSETS:
+                        continue
+                    
                     # Check how much of this coin the user has
-                    base_asset_balance = float(next(
-                        (b.get('free') for b in balances if b.get('asset') == base_asset),
-                        0
-                    ))
+                    base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
         
                     # Get filters
                     fv_step_size = symbol_info.get('stepSize')
@@ -806,6 +915,50 @@ def create_loop_environment():
                     ):
                         balance_quote -= quote_order_size
                         send_order(user, symbol, 'BUY', base_asset_order_size, price)
+                
+                ######## SHORT-TERM BUY ########
+                # Randomise the short-term list too
+                random.shuffle(buy_short_term)
+                for symbol in buy_short_term:
+                    # Stop looping if the quote asset balance is too low
+                    if balance_quote < ideal_quote_per_transaction:
+                        break
+                    
+                    symbol_info = symbol_infos.get(symbol, None)
+        
+                    # Skip if volume is too low
+                    if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
+                        continue
+        
+                    base_asset = symbol_info.get('baseAsset')
+                    # Skip excluded coins
+                    if base_asset in EXCLUDE_BASE_ASSETS:
+                        continue
+                    
+                    # Check how much of this coin the user has
+                    base_asset_balance = organised_balances.get(base_asset, 0)
+        
+                    # Get filters
+                    fv_step_size = symbol_info.get('stepSize')
+                    fv_min_notional = symbol_info.get('minNotional')
+                
+                    # This is how much the bot will actually try to spend on this coin
+                    # In case the ideal is lower than the configured minimum buying size, the latter will be used instead
+                    quote_per_transaction = max(symbol_info.get('minNotionalBuy'), ideal_quote_per_transaction)
+        
+                    price = symbol_info.get('bidPrice')
+                    f_price = float(price)
+        
+                    base_asset_order_size = math.floor(
+                        quote_per_transaction / f_price / fv_step_size) * fv_step_size
+                    # Check if the user already has enough of this coin
+                    quote_order_size = base_asset_order_size * f_price
+                    if (
+                        balance_quote >= quote_order_size >= fv_min_notional and
+                        base_asset_balance * f_price < symbol_info.get('holdThreshold')
+                    ):
+                        balance_quote -= quote_order_size
+                        send_record_short_term_order(user, symbol, 'BUY', base_asset_order_size, price)
 
         # Write stuff down
         record_session_data()
