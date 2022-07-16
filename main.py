@@ -864,6 +864,8 @@ def create_loop_environment():
                     send_order(user, symbol, 'SELL', base_asset_order_size, price)
 
             # Figure out how much to spend on each coin
+            # This is mostly just to easily track the balance between each quote asset;
+            # Not including the for loop may honestly be faster
             for qa in PROGRAM_QUOTE_ASSETS:
             ########################################################################
                 balance_quote = organised_balances.get(qa, 0)
@@ -881,6 +883,10 @@ def create_loop_environment():
                         break
                     
                     symbol_info = symbol_infos.get(symbol, None)
+
+                    # Make sure the quote asset is correct!
+                    if symbol_info.get('quoteAsset') != qa:
+                        continue
         
                     # Skip if volume is too low
                     if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
@@ -925,6 +931,10 @@ def create_loop_environment():
                         break
                     
                     symbol_info = symbol_infos.get(symbol, None)
+
+                    # Make sure the quote asset is correct!
+                    if symbol_info.get('quoteAsset') != qa:
+                        continue
         
                     # Skip if volume is too low
                     if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
