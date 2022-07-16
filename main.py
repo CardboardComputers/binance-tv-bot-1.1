@@ -30,7 +30,7 @@ API = {
 # Trade using these coins
 PROGRAM_QUOTE_ASSETS = ['BUSD', 'BNB', 'USDT', 'BTC', 'ETH']
 # The amount of time between loops
-LOOP_DELAY_SECONDS = 3
+LOOP_DELAY_SECONDS = 1
 # Proportion of bot's min notional; if the balance is higher than this then the bot will not buy in an asset pair
 NOTIONAL_HOLD_THRESHOLD_FAC = 0.95
 # Proportion of Binance's min notional to use for calculating floored buy quantity
@@ -90,46 +90,50 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         return -1
     elif (
     ### BUY STRATEGY
+    
+        rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'SELL', 'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'SELL', 'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_1_HOUR]['sum'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_HOUR]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_HOUR]['mav'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_HOUR]['sum'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_HOUR]['osc'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_HOUR]['mav'] in {'SELL', 'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_2_HOURS]['sum'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_2_HOURS]['osc'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_2_HOURS]['mav'] in {'SELL', 'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_4_HOURS]['sum'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
-        rec[Interval.INTERVAL_4_HOURS]['osc'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
-        rec[Interval.INTERVAL_4_HOURS]['mav'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
+        # rec[Interval.INTERVAL_4_HOURS]['sum'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
+        # rec[Interval.INTERVAL_4_HOURS]['osc'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
+        # rec[Interval.INTERVAL_4_HOURS]['mav'] in {'SELL', 'STRONG_SELL', 'NEUTRAL'} and
         
-        _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('sum', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('osc', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('mav', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('sum', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('osc', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_15_MINUTES, {}).get('mav', False) and
         
-        _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('sum', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('osc', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('mav', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('sum', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('osc', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_30_MINUTES, {}).get('mav', False) and
         
-        _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('sum', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('osc', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('mav', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('sum', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('osc', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_1_HOUR, {}).get('mav', False) and
         
-        _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('sum', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('osc', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('mav', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('sum', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('osc', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_2_HOURS, {}).get('mav', False) and
         
-        _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('sum', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('osc', False) and
-        _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('mav', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('sum', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('osc', False) and
+        # _did_hit_strong_sell.get(Interval.INTERVAL_4_HOURS, {}).get('mav', False) and
         
         #rec[Interval.INTERVAL_1_DAY]['sum'] in {'STRONG_SELL'} and
         #rec[Interval.INTERVAL_1_DAY]['osc'] in {'SELL', 'STRONG_SELL'} and
@@ -152,25 +156,30 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
 def run_short_term_trade_strategy(rec):
     if (
         # short-term BUY strategy
-        rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+    
+        rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_1_HOUR]['sum'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_HOUR]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_HOUR]['mav'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['mav'] in {'BUY', 'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_4_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_4_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        # rec[Interval.INTERVAL_4_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_4_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
         
     True):
         return 1
@@ -358,7 +367,7 @@ def create_loop_environment():
                         if client_order_id in short_term_pending_orders:
                             # Track balances for short-term orders
                             short_term_buy_prices[user][s] = price
-                            short_term_balances[user][s] += float(msg.get('q'))
+                            short_term_balances[user][s] = short_term_balances[user].get(s, 0) + float(msg.get('q'))
                             # Remove filled orders from pending orders
                             if msg.get('X') == 'FILLED':
                                 short_term_pending_orders.pop(client_order_id)
@@ -369,7 +378,7 @@ def create_loop_environment():
                     elif msg.get('S') == 'SELL':
                         # Track how much is left after selling
                         if client_order_id in short_term_pending_orders:
-                            short_term_balances[user][s] -= float(msg.get('q'))
+                            short_term_balances[user][s] = short_term_balances[user].get(s, 0) - float(msg.get('q'))
                             # Remove filled orders from pending orders
                             if msg.get('X') == 'FILLED':
                                 short_term_pending_orders.pop(client_order_id)
