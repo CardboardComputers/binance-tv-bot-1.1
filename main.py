@@ -53,25 +53,25 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
     if (
     ### SELL STRATEGY
         
-        rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY'} and
-        rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'BUY'} and
-        rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'BUY'} and
+        # rec[Interval.INTERVAL_30_MINUTES]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_1_HOUR]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_HOUR]['osc'] in {'BUY'} and
-        rec[Interval.INTERVAL_1_HOUR]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['osc'] in {'BUY'} and
+        # rec[Interval.INTERVAL_1_HOUR]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY'} and
-        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY'} and
+        # rec[Interval.INTERVAL_2_HOURS]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_4_HOURS]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY'} and
-        rec[Interval.INTERVAL_4_HOURS]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_4_HOURS]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY'} and
+        # rec[Interval.INTERVAL_4_HOURS]['mav'] in {'STRONG_BUY'} and
         
         
         #rec[Interval.INTERVAL_1_DAY]['sum'] in {'STRONG_BUY'} and
@@ -82,22 +82,26 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_WEEK]['osc'] in {'BUY'} and
         #rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_BUY'} and
         
-        #rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_BUY'} and
-        #rec[Interval.INTERVAL_1_MONTH]['osc'] in {'BUY'} and
-        #rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_MONTH]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_BUY'} and
     ###
     True):
         return -1
     elif (
     ### BUY STRATEGY
     
-        rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'BUY', 'STRONG_BUY'} and
         
-        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
-        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
-        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_5_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_5_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_5_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
         
         # rec[Interval.INTERVAL_30_MINUTES]['sum'] in {'SELL', 'STRONG_SELL'} and
         # rec[Interval.INTERVAL_30_MINUTES]['osc'] in {'SELL', 'STRONG_SELL'} and
@@ -143,9 +147,9 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_WEEK]['osc'] in {'SELL', 'STRONG_SELL'} and
         #rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_SELL'} and
         
-        #rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
-        #rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
-        #rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_SELL'} and
     ###
     True):
         return 1
@@ -157,9 +161,17 @@ def run_short_term_trade_strategy(rec):
     if (
         # short-term BUY strategy
     
-        rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MINUTE]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        # rec[Interval.INTERVAL_5_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_5_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_5_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_15_MINUTES]['mav'] in {'BUY', 'STRONG_BUY'} and
         
         # rec[Interval.INTERVAL_15_MINUTES]['sum'] in {'BUY', 'STRONG_BUY'} and
         # rec[Interval.INTERVAL_15_MINUTES]['osc'] in {'BUY', 'STRONG_BUY'} and
@@ -180,6 +192,10 @@ def run_short_term_trade_strategy(rec):
         # rec[Interval.INTERVAL_4_HOURS]['sum'] in {'BUY', 'STRONG_BUY'} and
         # rec[Interval.INTERVAL_4_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
         # rec[Interval.INTERVAL_4_HOURS]['mav'] in {'BUY', 'STRONG_BUY'} and
+        
+        rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_SELL'} and
         
     True):
         return 1
@@ -744,12 +760,12 @@ def create_loop_environment():
             elif trade < 0:
                 sell.append(symbol)
         
-        for symbol, recommendation in symbol_last_recommendations.items():
-            if symbol == 'BTCBUSD':
-                continue
-            trade = run_short_term_trade_strategy(recommendation)
-            if trade > 0:
-                buy_short_term.append(symbol)
+        # for symbol, recommendation in symbol_last_recommendations.items():
+            # if symbol == 'BTCBUSD':
+                # continue
+            # trade = run_short_term_trade_strategy(recommendation)
+            # if trade > 0:
+                # buy_short_term.append(symbol)
         
         # Check if bitcoin is buy or sell first, and only buy or sell based on that
         # btc_trade = run_index_strategy(symbol_recommendations['BTCBUSD'], symbol_last_recommendations['BTCBUSD'])
@@ -794,29 +810,29 @@ def create_loop_environment():
 
             ######## SHORT-TERM SELL ########
             # Check if short-term prices have increased above the sell threshold
-            for symbol, price in short_term_buy_prices[user].items():
-                symbol_info = symbol_infos.get(symbol, None)
-                sell_threshold = price * SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_FACTOR
-                if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
+            # for symbol, price in short_term_buy_prices[user].items():
+                # symbol_info = symbol_infos.get(symbol, None)
+                # sell_threshold = price * SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_FACTOR
+                # if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
     
-                    base_asset = symbol_info.get('baseAsset')
-                    # Check how much of this coin the user has
-                    base_asset_balance = organised_balances.get(base_asset, 0)
+                    # base_asset = symbol_info.get('baseAsset')
+                    # # Check how much of this coin the user has
+                    # base_asset_balance = organised_balances.get(base_asset, 0)
                     
-                    # Skip excluded coins
-                    if base_asset in EXCLUDE_BASE_ASSETS:
-                        continue
+                    # # Skip excluded coins
+                    # if base_asset in EXCLUDE_BASE_ASSETS:
+                        # continue
 
-                    # Get filters
-                    fv_step_size = symbol_info.get('stepSize')
-                    fv_min_notional = symbol_info.get('minNotional')
+                    # # Get filters
+                    # fv_step_size = symbol_info.get('stepSize')
+                    # fv_min_notional = symbol_info.get('minNotional')
     
-                    price = symbol_info.get('askPrice')
+                    # price = symbol_info.get('askPrice')
     
-                    # Sell as much of the base asset as possible
-                    base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
-                    if base_asset_order_size * float(price) >= fv_min_notional:
-                        send_record_short_term_order(user, symbol, 'SELL', base_asset_order_size, price)
+                    # # Sell as much of the base asset as possible
+                    # base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
+                    # if base_asset_order_size * float(price) >= fv_min_notional:
+                        # send_record_short_term_order(user, symbol, 'SELL', base_asset_order_size, price)
 
             ######## LONG-TERM SELL ########
             # Check if prices have increased above the sell threshold
@@ -933,51 +949,51 @@ def create_loop_environment():
                 
                 ######## SHORT-TERM BUY ########
                 # Randomise the short-term list too
-                random.shuffle(buy_short_term)
-                for symbol in buy_short_term:
-                    # Stop looping if the quote asset balance is too low
-                    if balance_quote < ideal_quote_per_transaction:
-                        break
+                # random.shuffle(buy_short_term)
+                # for symbol in buy_short_term:
+                    # # Stop looping if the quote asset balance is too low
+                    # if balance_quote < ideal_quote_per_transaction:
+                        # break
                     
-                    symbol_info = symbol_infos.get(symbol, None)
+                    # symbol_info = symbol_infos.get(symbol, None)
 
-                    # Make sure the quote asset is correct!
-                    if symbol_info.get('quoteAsset') != qa:
-                        continue
+                    # # Make sure the quote asset is correct!
+                    # if symbol_info.get('quoteAsset') != qa:
+                        # continue
         
-                    # Skip if volume is too low
-                    if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
-                        continue
+                    # # Skip if volume is too low
+                    # if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
+                        # continue
         
-                    base_asset = symbol_info.get('baseAsset')
-                    # Skip excluded coins
-                    if base_asset in EXCLUDE_BASE_ASSETS:
-                        continue
+                    # base_asset = symbol_info.get('baseAsset')
+                    # # Skip excluded coins
+                    # if base_asset in EXCLUDE_BASE_ASSETS:
+                        # continue
                     
-                    # Check how much of this coin the user has
-                    base_asset_balance = organised_balances.get(base_asset, 0)
+                    # # Check how much of this coin the user has
+                    # base_asset_balance = organised_balances.get(base_asset, 0)
         
-                    # Get filters
-                    fv_step_size = symbol_info.get('stepSize')
-                    fv_min_notional = symbol_info.get('minNotional')
+                    # # Get filters
+                    # fv_step_size = symbol_info.get('stepSize')
+                    # fv_min_notional = symbol_info.get('minNotional')
                 
-                    # This is how much the bot will actually try to spend on this coin
-                    # In case the ideal is lower than the configured minimum buying size, the latter will be used instead
-                    quote_per_transaction = max(symbol_info.get('minNotionalBuy'), ideal_quote_per_transaction)
+                    # # This is how much the bot will actually try to spend on this coin
+                    # # In case the ideal is lower than the configured minimum buying size, the latter will be used instead
+                    # quote_per_transaction = max(symbol_info.get('minNotionalBuy'), ideal_quote_per_transaction)
         
-                    price = symbol_info.get('bidPrice')
-                    f_price = float(price)
+                    # price = symbol_info.get('bidPrice')
+                    # f_price = float(price)
         
-                    base_asset_order_size = math.floor(
-                        quote_per_transaction / f_price / fv_step_size) * fv_step_size
-                    # Check if the user already has enough of this coin
-                    quote_order_size = base_asset_order_size * f_price
-                    if (
-                        balance_quote >= quote_order_size >= fv_min_notional and
-                        base_asset_balance * f_price < symbol_info.get('holdThreshold')
-                    ):
-                        balance_quote -= quote_order_size
-                        send_record_short_term_order(user, symbol, 'BUY', base_asset_order_size, price)
+                    # base_asset_order_size = math.floor(
+                        # quote_per_transaction / f_price / fv_step_size) * fv_step_size
+                    # # Check if the user already has enough of this coin
+                    # quote_order_size = base_asset_order_size * f_price
+                    # if (
+                        # balance_quote >= quote_order_size >= fv_min_notional and
+                        # base_asset_balance * f_price < symbol_info.get('holdThreshold')
+                    # ):
+                        # balance_quote -= quote_order_size
+                        # send_record_short_term_order(user, symbol, 'BUY', base_asset_order_size, price)
 
         # Write stuff down
         record_session_data()
