@@ -337,18 +337,21 @@ def create_loop_environment():
     def record_session_data():
         with open('buy_prices.json', 'w') as f:
             f.write(json.dumps(buy_prices))
+
+        with open('pair_balances.json', 'w') as f:
+            f.write(json.dumps(pair_balances))
         
-        with open('short_term_buy_prices.json', 'w') as f:
-            f.write(json.dumps(short_term_buy_prices))
+        # with open('short_term_buy_prices.json', 'w') as f:
+            # f.write(json.dumps(short_term_buy_prices))
             
-        with open('short_term_balances.json', 'w') as f:
-            f.write(json.dumps(short_term_balances))
+        # with open('short_term_balances.json', 'w') as f:
+            # f.write(json.dumps(short_term_balances))
         
-        with open('short_term_pending_orders.json', 'w') as f:
-            f.write(json.dumps(short_term_pending_orders))
+        # with open('short_term_pending_orders.json', 'w') as f:
+            # f.write(json.dumps(short_term_pending_orders))
         
-        with open('did_hit_strong_sell.json', 'w') as f:
-            f.write(json.dumps(did_hit_strong_sell))
+        # with open('did_hit_strong_sell.json', 'w') as f:
+            # f.write(json.dumps(did_hit_strong_sell))
 
 
     # Shut down websockets (e.g. before quitting)
@@ -383,21 +386,28 @@ def create_loop_environment():
                         if client_order_id in short_term_pending_orders:
                             # Track balances for short-term orders
                             short_term_buy_prices[user][s] = price
+                            # Track balances per-quote-asset (or rather just using complete symbols)
                             short_term_balances[user][s] = short_term_balances[user].get(s, 0) + float(msg.get('q'))
                             # Remove filled orders from pending orders
                             if msg.get('X') == 'FILLED':
                                 short_term_pending_orders.pop(client_order_id)
                             print('record short-term price for api#{} {} @ {}'.format(user, s, price))
                         else:
+                            # Normal (presumably long-term) orders
                             buy_prices[user][s] = float(price)
+                            # Track balances per-quote-asset (or rather just using complete symbols
+                            pair_balances[user][s] = pair_balances[user].get(s, 0) + float(msg.get('q'))
                             print('record price for api#{} {} @ {}'.format(user, s, price))
                     elif msg.get('S') == 'SELL':
                         # Track how much is left after selling
                         if client_order_id in short_term_pending_orders:
-                            short_term_balances[user][s] = short_term_balances[user].get(s, 0) - float(msg.get('q'))
+                            short_term_balances[user][s] = max(short_term_balances[user].get(s, 0) - float(msg.get('q')), 0)
                             # Remove filled orders from pending orders
                             if msg.get('X') == 'FILLED':
                                 short_term_pending_orders.pop(client_order_id)
+                        else:
+                            # Track balances per-quote-asset (or rather just using complete symbols), and clamp to 0+
+                            pair_balances[user][s] = max(pair_balances[user].get(s, 0) - float(msg.get('q')), 0)
                             
                     record_session_data()
             elif msg.get('e') == 'error':
@@ -487,13 +497,22 @@ def create_loop_environment():
     buy_prices = dict()
     # Try to read previous buy prices from the file
     try:
-        f = open('buy_prices.json', 'r')
-        res = f.read()
-        f.close()
+        with open('buy_prices.json', 'r') as f:
+            res = f.read()
         buy_prices = json.loads(res)
         print('Loaded `buy_prices`')
     except:
         print('Could not load `buy_prices`, starting fresh')
+
+    # { api: { symbol: balance } }
+    pair_balances = dict()
+    try:
+        with open('pair_balances.json', 'r') as f:
+            res = f.read()
+        pair_balances = json.loads(res)
+        print('Loaded `pair_balances`')
+    except:
+        print('Could not load `pair_balances`, starting fresh')
         
     # As above, but for the short-term strategy
     short_term_buy_prices = dict()
@@ -563,6 +582,8 @@ def create_loop_environment():
         # Create buy price dictionary for this user
         if not user in buy_prices:
             buy_prices[user] = dict()
+        if not user in pair_balances:
+            pair_balances[user] = dict()
         # As above, but for the short-term strategy
         if not user in short_term_buy_prices:
             short_term_buy_prices[user] = dict()
@@ -874,6 +895,16 @@ def create_loop_environment():
                 
                 # Check how much of this coin the user has
                 base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
+                # Also check the balance for this specific coin pair, considering which quote asset was used to buy this coin
+                pair_balance = pair_balances[user].get(symbol, 0)
+                # If the pair info is invalid then try to make it valid idk
+                if base_asset_balance < pair_balance:
+                    pair_balances[user][symbol] = base_asset_balance
+                    pair_balance = base_asset_balance
+                else:
+                    base_asset_balance = pair_balance
+                
+                # Skip if there is no base asset to sell
                 if base_asset_balance <= 0:
                     continue
 
@@ -894,7 +925,7 @@ def create_loop_environment():
             for qa in PROGRAM_QUOTE_ASSETS:
             ########################################################################
                 balance_quote = organised_balances.get(qa, 0)
-                print('api#{} quote asset {}: {}'.format(user, qa, balance_quote))
+                #print('api#{} quote asset {}: {}'.format(user, qa, balance_quote))
                 # This is how much the bot wants to spend on each coin
                 # Note that if this is below the minNotionalBuy value, the bot will use that value instead
                 ideal_quote_per_transaction = balance_quote * QUOTE_PER_TRANSACTION_FAC
