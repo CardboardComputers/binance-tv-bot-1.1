@@ -42,7 +42,7 @@ PRICE_INCREASE_SELL_THRESHOLD_PERCENT = 0.2
 # As above, but for the short-term strategy
 SHORT_TERM_PRICE_INCREASE_SELL_THRESHOLD_PERCENT = 0.01
 # Ignore coins below this volume
-QUOTE_VOLUME_MIN = 7000000
+QUOTE_VOLUME_MIN = 0.0
 # Do not buy or sell these coins
 EXCLUDE_BASE_ASSETS = {'TUSD', 'USDC', 'EUR', 'BTC', 'BUSD', 'BNB', 'USDP', 'AUD', 'UST', 'LUNA'}
 
@@ -78,13 +78,13 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_DAY]['osc'] in {'BUY'} and
         #rec[Interval.INTERVAL_1_DAY]['mav'] in {'STRONG_BUY'} and
         
-        #rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_BUY'} and
-        #rec[Interval.INTERVAL_1_WEEK]['osc'] in {'BUY'} and
-        #rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_WEEK]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_MONTH]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MONTH]['osc'] in {'BUY', 'STRONG_BUY'} and
+        # rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_BUY'} and
     ###
     True):
         return -1
@@ -143,13 +143,13 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_DAY]['osc'] in {'SELL', 'STRONG_SELL'} and
         #rec[Interval.INTERVAL_1_DAY]['mav'] in {'STRONG_SELL'} and
         
-        #rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_SELL'} and
-        #rec[Interval.INTERVAL_1_WEEK]['osc'] in {'SELL', 'STRONG_SELL'} and
-        #rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_WEEK]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
+        # rec[Interval.INTERVAL_1_MONTH]['mav'] in {'STRONG_SELL'} and
     ###
     True):
         return 1
@@ -776,8 +776,8 @@ def create_loop_environment():
             # print('BTCBUSD says do not BUY')
             # buy = list()
         
-        #print('BUY: {}'.format(buy))
-        #print('SELL: {}'.format(sell))
+        print('BUY: {}'.format(buy))
+        print('SELL: {}'.format(sell))
 
         # Cancel orders
         try:
@@ -836,32 +836,32 @@ def create_loop_environment():
 
             ######## LONG-TERM SELL ########
             # Check if prices have increased above the sell threshold
-            for symbol, price in buy_prices[user].items():
-                symbol_info = symbol_infos.get(symbol, None)
-                sell_threshold = price * PRICE_INCREASE_SELL_THRESHOLD_FACTOR
-                if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
+            # for symbol, price in buy_prices[user].items():
+                # symbol_info = symbol_infos.get(symbol, None)
+                # sell_threshold = price * PRICE_INCREASE_SELL_THRESHOLD_FACTOR
+                # if symbol_info and float(symbol_info.get('bidPrice')) > sell_threshold:
     
-                    base_asset = symbol_info.get('baseAsset')
-                    # Skip excluded coins
-                    if base_asset in EXCLUDE_BASE_ASSETS:
-                        continue
+                    # base_asset = symbol_info.get('baseAsset')
+                    # # Skip excluded coins
+                    # if base_asset in EXCLUDE_BASE_ASSETS:
+                        # continue
                         
-                    # Check how much of this coin the user has
-                    base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
-                    # Skip coins with no long-term balance
-                    if base_asset_balance <= 0:
-                        continue
+                    # # Check how much of this coin the user has
+                    # base_asset_balance = organised_balances.get(base_asset, 0) - short_term_balances[user].get(symbol, 0)
+                    # # Skip coins with no long-term balance
+                    # if base_asset_balance <= 0:
+                        # continue
 
-                    # Get filters
-                    fv_step_size = symbol_info.get('stepSize')
-                    fv_min_notional = symbol_info.get('minNotional')
+                    # # Get filters
+                    # fv_step_size = symbol_info.get('stepSize')
+                    # fv_min_notional = symbol_info.get('minNotional')
     
-                    price = symbol_info.get('askPrice')
+                    # price = symbol_info.get('askPrice')
     
-                    # Sell as much of the base asset as possible
-                    base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
-                    if base_asset_order_size * float(price) >= fv_min_notional:
-                        send_order(user, symbol, 'SELL', base_asset_order_size, price)
+                    # # Sell as much of the base asset as possible
+                    # base_asset_order_size = math.floor(base_asset_balance / fv_step_size) * fv_step_size
+                    # if base_asset_order_size * float(price) >= fv_min_notional:
+                        # send_order(user, symbol, 'SELL', base_asset_order_size, price)
 
             # Sell stuff based on indicators
             for symbol in sell:
@@ -894,6 +894,7 @@ def create_loop_environment():
             for qa in PROGRAM_QUOTE_ASSETS:
             ########################################################################
                 balance_quote = organised_balances.get(qa, 0)
+                print('api#{} quote asset {}: {}'.format(user, qa, balance_quote))
                 # This is how much the bot wants to spend on each coin
                 # Note that if this is below the minNotionalBuy value, the bot will use that value instead
                 ideal_quote_per_transaction = balance_quote * QUOTE_PER_TRANSACTION_FAC
@@ -903,23 +904,25 @@ def create_loop_environment():
                 random.shuffle(buy)
                 # Buy stuff
                 for symbol in buy:
-                    # Stop looping if the quote asset balance is too low
-                    if balance_quote < ideal_quote_per_transaction:
-                        break
-                    
                     symbol_info = symbol_infos.get(symbol, None)
 
                     # Make sure the quote asset is correct!
                     if symbol_info.get('quoteAsset') != qa:
                         continue
-        
-                    # Skip if volume is too low
-                    if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
-                        continue
-        
+                        
                     base_asset = symbol_info.get('baseAsset')
                     # Skip excluded coins
                     if base_asset in EXCLUDE_BASE_ASSETS:
+                        continue
+                        
+                    # Stop looping if the quote asset balance is too low
+                    if balance_quote < ideal_quote_per_transaction:
+                        #print('WTB {}, cannot because balance {} < ideal {}'.format(symbol, balance_quote, ideal_quote_per_transaction))
+                        break
+        
+                    # Skip if volume is too low
+                    if float(symbol_info.get('quoteVolume')) < QUOTE_VOLUME_MIN:
+                        #print('WTB {}, cannot because quote volume {} < minimum {}'.format(symbol, symbol_info.get('quoteVolume'), QUOTE_VOLUME_MIN))
                         continue
                     
                     # Check how much of this coin the user has
@@ -946,6 +949,9 @@ def create_loop_environment():
                     ):
                         balance_quote -= quote_order_size
                         send_order(user, symbol, 'BUY', base_asset_order_size, price)
+                    else:
+                        #print('WTB {}, cannot because order size too small or holding base asset instead'.format(symbol))
+                        pass
                 
                 ######## SHORT-TERM BUY ########
                 # Randomise the short-term list too
