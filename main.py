@@ -527,7 +527,15 @@ def create_loop_environment():
             elif trade < 0:
                 sell.append(symbol)
         # Print out which symbols to buy or sell
-        print(f"BUY:\n{buy}\nSELL:\n{sell}")
+        buy_with_prices = {
+            symbol: symbol_infos.get(symbol, {}).get("askPrice", "MISSING")
+            for symbol in buy
+        }
+        sell_with_prices = {
+            symbol: symbol_infos.get(symbol, {}).get("bidPrice", "MISSING")
+            for symbol in sell
+        }
+        print(f"BUY:\n{buy_with_prices}\nSELL:\n{sell_with_prices}")
 
         # Cancel orders
         try:
