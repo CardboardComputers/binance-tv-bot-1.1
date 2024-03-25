@@ -6,6 +6,9 @@ import builtins
 import math
 import random
 
+from datetime import datetime
+from subprocess import Popen
+
 from binance.spot import Spot
 from binance.websocket.spot.websocket_client import SpotWebsocketClient
 from binance.error import ClientError
@@ -25,12 +28,16 @@ API = {
         'key': 's7AVdedXVVhGYOuswx6pOHy6OyPPKDimBLfhKR4JMIcWK9feH5PN7zrItpkVXIVL',
         'secret': '34Yq97P81r0GUCQudQHMFfAvb7orlmtpCiNBKNvVzgcwEeUzCRmq00lRWPalIB9I',
     },
+    'Reis': {
+        'key': 'EHdrguoIKWClqSOT5UqbYIfDpUIvrDGb8CmqreyNK4mBgFnbDoI71gk7frX8q3uL',
+        'secret': '3VqVf0mEp8a8SA3my3zOoicfyDITLtAEohJplr80qTci8jDuhxDtLuBpNRqpl1ZJ',
+    },
 }
 
 # Trade using these coins
 PROGRAM_QUOTE_ASSETS = ['BUSD', 'BNB', 'USDT', 'BTC', 'ETH']
 # The amount of time between loops
-LOOP_DELAY_SECONDS = 1
+LOOP_DELAY_SECONDS = 60
 # Proportion of bot's min notional; if the balance is higher than this then the bot will not buy in an asset pair
 NOTIONAL_HOLD_THRESHOLD_FAC = 0.95
 # Proportion of Binance's min notional to use for calculating floored buy quantity
@@ -78,9 +85,9 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_DAY]['osc'] in {'BUY'} and
         #rec[Interval.INTERVAL_1_DAY]['mav'] in {'STRONG_BUY'} and
         
-        rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_WEEK]['osc'] in {'BUY', 'STRONG_BUY'} and
-        rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'STRONG_BUY'} and
+        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'BUY', 'STRONG_BUY'} and
+        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'STRONG_BUY'} and
         
         # rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_BUY'} and
         # rec[Interval.INTERVAL_1_MONTH]['osc'] in {'BUY', 'STRONG_BUY'} and
@@ -143,9 +150,9 @@ def run_trade_strategy(rec, last_rec, _did_hit_strong_sell):
         #rec[Interval.INTERVAL_1_DAY]['osc'] in {'SELL', 'STRONG_SELL'} and
         #rec[Interval.INTERVAL_1_DAY]['mav'] in {'STRONG_SELL'} and
         
-        rec[Interval.INTERVAL_1_WEEK]['sum'] in {'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_WEEK]['osc'] in {'SELL', 'STRONG_SELL'} and
-        rec[Interval.INTERVAL_1_WEEK]['mav'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_2_HOURS]['sum'] in {'STRONG_SELL'} and
+        rec[Interval.INTERVAL_2_HOURS]['osc'] in {'SELL', 'STRONG_SELL'} and
+        rec[Interval.INTERVAL_2_HOURS]['mav'] in {'STRONG_SELL'} and
         
         # rec[Interval.INTERVAL_1_MONTH]['sum'] in {'STRONG_SELL'} and
         # rec[Interval.INTERVAL_1_MONTH]['osc'] in {'SELL', 'STRONG_SELL'} and
@@ -311,9 +318,9 @@ print('Intervals: {}'.format(ta_intervals))
 # Handle Binance API exceptions
 def except_api(e):
     print(e)
-    # BAD_SYMBOL
+    # INVALID_TIMESTAMP
     if e.error_code == -1021:
-      pass
+        pass
     # NEW_ORDER_REJECTED
     elif e.error_code == -2010:
         pass
